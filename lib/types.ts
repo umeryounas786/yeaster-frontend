@@ -103,8 +103,28 @@ export interface Voicemail {
   updatedAt: string;
 }
 
+export interface WallboardStats {
+  total: number;
+  unread: number;
+  read: number;
+  saved: number;
+}
+
+export type WallboardFilter = "all" | "unread" | "read" | "saved";
+
 export interface WallboardResponse {
   items: Voicemail[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  stats: WallboardStats;
   fetchedAt: string;
-  syncSummary: { fetched: number; markedDeleted: number };
+  lastSyncedAt: number | null;
+  syncing: boolean;
+}
+
+export interface SyncResponse {
+  triggered: boolean;
+  lastSyncedAt: number | null;
 }

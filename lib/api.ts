@@ -5,6 +5,7 @@ import type {
   PaginatedResult,
   Profile,
   Role,
+  SyncResponse,
   UpdateUserPayload,
   UserProfile,
   UserStats,
@@ -155,10 +156,29 @@ export const usersApi = {
 };
 
 export const voicemailApi = {
+  // Read-only: hits our DB, never the PBX. Safe to call for pagination / filter.
   wallboard: (
-    params: { extensionNumber?: string; search?: string } = {}
+    params: {
+      extensionNumber?: string;
+      search?: string;
+      filter?: string;
+      page?: number;
+      limit?: number;
+    } = {}
   ) =>
-    request<WallboardResponse>("/voicemails/wallboard", { query: params }),
+    request<WallboardResponse>("/voicemails/wallboard", {
+      query: {
+        extensionNumber: params.extensionNumber,
+        search: params.search,
+        filter: params.filter,
+        page: params.page,
+        limit: params.limit,
+      },
+    }),
+
+  // Triggers a background PBX sync. Returns immediately.
+  sync: () =>
+    request<SyncResponse>("/voicemails/sync", { method: "POST" }),
 
   testConnection: () =>
     request<{ ok: boolean }>("/voicemails/test-connection", {
