@@ -2,6 +2,8 @@ import type {
   ApiEnvelope,
   AuthResponse,
   CreateUserPayload,
+  ExtensionRef,
+  HistoryResponse,
   PaginatedResult,
   Profile,
   Role,
@@ -179,6 +181,26 @@ export const voicemailApi = {
   // Triggers a background PBX sync. Returns immediately.
   sync: () =>
     request<SyncResponse>("/voicemails/sync", { method: "POST" }),
+
+  extensions: () =>
+    request<{ items: ExtensionRef[] }>("/voicemails/extensions"),
+
+  history: (
+    params: {
+      days?: number;
+      page?: number;
+      limit?: number;
+      search?: string;
+    } = {}
+  ) =>
+    request<HistoryResponse>("/voicemails/history", {
+      query: {
+        days: params.days,
+        page: params.page,
+        limit: params.limit,
+        search: params.search,
+      },
+    }),
 
   testConnection: () =>
     request<{ ok: boolean }>("/voicemails/test-connection", {

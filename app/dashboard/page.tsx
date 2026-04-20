@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { ApiError, voicemailApi } from "@/lib/api";
 import type {
+  ExtensionRef,
   UserProfile,
   Voicemail,
   WallboardFilter,
@@ -51,6 +52,8 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<WallboardFilter>("all");
+  const [extensionFilter, setExtensionFilter] = useState<string>("");
+  const [availableExtensions, setAvailableExtensions] = useState<ExtensionRef[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const mountedRef = useRef(true);
@@ -70,6 +73,7 @@ export default function DashboardPage() {
         const data = await voicemailApi.wallboard({
           search: search || undefined,
           filter: activeFilter,
+          extensionNumber: extensionFilter || undefined,
           page: pageOverride ?? page,
           limit: PAGE_SIZE,
         });
@@ -94,7 +98,7 @@ export default function DashboardPage() {
         }
       }
     },
-    [search, activeFilter, page]
+    [search, activeFilter, extensionFilter, page]
   );
 
   // Fire a background sync — don't block anything. Always safe to call.
@@ -126,6 +130,35 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Load list of extensions that have voicemails (for filter dropdown).
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await voicemailApi.extensions();
+        if (!cancelled) setAvailableExtensions(res.items);
+      } catch {
+        // Non-fatal — dropdown just won't populate.
+      }
+    };
+    load();
+    const id = setInterval(load, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  // While a sync is running (or DB is still empty on first load), poll
+  // wallboard every 2 seconds so data appears as soon as it arrives.
+  useEffect(() => {
+    if (!syncing && total > 0) return;
+    if (initialLoad) return;
+    const id = setInterval(() => loadPage({ silent: true }), 2000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncing, total, initialLoad]);
+
   // Debounced reload on search / filter change — reset to page 1.
   useEffect(() => {
     if (initialLoad) return;
@@ -135,7 +168,7 @@ export default function DashboardPage() {
     }, 200);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, activeFilter]);
+  }, [search, activeFilter, extensionFilter]);
 
   // Page change — only reload items, never sync.
   const goToPage = useCallback(
@@ -282,28 +315,44 @@ export default function DashboardPage() {
               {total}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-xl bg-slate-50 p-1">
-            {(
-              [
-                { key: "all", label: "All" },
-                { key: "unread", label: "Unread" },
-                { key: "read", label: "Read" },
-                { key: "saved", label: "Saved" },
-              ] as { key: WallboardFilter; label: string }[]
-            ).map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => setActiveFilter(f.key)}
-                className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
-                  activeFilter === f.key
-                    ? "bg-[#0B0D12] text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-900"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={extensionFilter}
+              onChange={(e) => setExtensionFilter(e.target.value)}
+              className="h-8 rounded-lg bg-slate-50 px-3 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-transparent focus:ring-slate-200"
+              aria-label="Filter by extension"
+            >
+              <option value="">All extensions</option>
+              {availableExtensions.map((ext) => (
+                <option key={ext.number} value={ext.number}>
+                  Ext {ext.number}
+                  {ext.name ? ` — ${ext.name}` : ""}
+                </option>
+              ))}
+            </select>
+            <div className="flex items-center gap-1.5 rounded-xl bg-slate-50 p-1">
+              {(
+                [
+                  { key: "all", label: "All" },
+                  { key: "unread", label: "Unread" },
+                  { key: "read", label: "Read" },
+                  { key: "saved", label: "Saved" },
+                ] as { key: WallboardFilter; label: string }[]
+              ).map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setActiveFilter(f.key)}
+                  className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
+                    activeFilter === f.key
+                      ? "bg-[#0B0D12] text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -313,8 +362,19 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {initialLoad ? (
-          <VoicemailSkeletonList />
+        {initialLoad || (syncing && showingList.length === 0) ? (
+          <div>
+            {syncing && showingList.length === 0 && !initialLoad && (
+              <div className="mb-3 flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-3 text-sm text-indigo-800 ring-1 ring-inset ring-indigo-200">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span className="font-semibold">Syncing voicemails from PBX…</span>
+                <span className="text-indigo-600">
+                  This can take 10–30 seconds on first load.
+                </span>
+              </div>
+            )}
+            <VoicemailSkeletonList />
+          </div>
         ) : showingList.length === 0 ? (
           <EmptyState
             icon={VoicemailIcon}
@@ -326,9 +386,7 @@ export default function DashboardPage() {
             description={
               search
                 ? "Try adjusting your search."
-                : syncing
-                  ? "Still syncing from the PBX…"
-                  : "New voicemails will appear here automatically."
+                : "New voicemails will appear here automatically."
             }
           />
         ) : (

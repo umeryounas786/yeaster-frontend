@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Bookmark, BookmarkCheck } from "lucide-react";
+import { Bookmark, BookmarkCheck, Users as UsersIcon } from "lucide-react";
 import type { Voicemail as VoicemailType } from "@/lib/types";
 
 interface Props {
@@ -172,6 +172,12 @@ export default function VoicemailCard({
             <span className={`h-1 w-1 rounded-full ${tone.badgeDot}`} />
             {tone.label}
           </span>
+          {v.isGroup && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[9px] font-bold text-indigo-800 ring-1 ring-inset ring-indigo-300">
+              <UsersIcon className="h-2.5 w-2.5" />
+              GROUP
+            </span>
+          )}
         </div>
         <p className={`mt-1 truncate text-xs ${tone.metaColor}`}>
           {v.callerName && v.callerNumber ? (

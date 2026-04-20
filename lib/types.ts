@@ -95,12 +95,27 @@ export interface Voicemail {
   duration: number;
   size: number;
   isRead: boolean;
+  isGroup: boolean;
   savedByUser: boolean;
   firstSeenAt: string;
   lastSeenAt: string;
   removedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ExtensionRef {
+  number: string;
+  name: string;
+}
+
+export interface HistoryResponse {
+  items: Voicemail[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  days: number;
 }
 
 export interface WallboardStats {
