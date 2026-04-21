@@ -22,15 +22,15 @@ export default function UserSidebar() {
   return (
     <aside className="sticky top-0 flex h-screen w-[248px] shrink-0 flex-col bg-[#0B0D12] px-[18px] py-6">
       <div className="mb-7 flex items-center gap-3 px-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0062FF] shadow-lg shadow-[#0062FF]/20">
+        {/* <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0062FF] shadow-lg shadow-[#0062FF]/20">
           <div className="h-3.5 w-3.5 rounded-full bg-white" />
-        </div>
+        </div> */}
         <div className="min-w-0">
           <p className="font-heading text-[17px] font-bold leading-tight text-white">
-            Yeastar
+            www.compuvoip.com
           </p>
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Wallboard
+            compuvoip
           </p>
         </div>
       </div>

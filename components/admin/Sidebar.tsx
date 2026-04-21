@@ -27,9 +27,9 @@ export default function Sidebar() {
         </div>
         <div className="min-w-0">
           <p className="font-heading text-[17px] font-bold leading-tight text-white">
-            Yeastar
+             www.compuvoip.com
           </p>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          <p className="h-16 w-16 lg:h-10 lg:w-10 object-contain shrink-0text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
             Admin Console
           </p>
         </div>

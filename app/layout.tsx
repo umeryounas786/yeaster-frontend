@@ -20,8 +20,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Yeastar Wallboard",
-  description: "Yeastar PBX voicemail wallboard dashboard",
+  title: "compuvoip",
+  description: "www.compuvoip.com",
 };
 
 export default function RootLayout({
