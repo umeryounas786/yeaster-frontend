@@ -78,18 +78,18 @@ interface Tone {
 }
 
 const UNREAD: Tone = {
-  card: "bg-[#FFFBFB]",
-  strip: "bg-[#DC2626]",
-  badgeBg: "bg-[#DC2626]",
+  card: "bg-[#F0FDF4]",
+  strip: "bg-[#10B981]",
+  badgeBg: "bg-[#10B981]",
   badgeText: "text-white",
   badgeDot: "bg-white",
-  label: "UNREAD",
+  label: "NEW",
   nameColor: "text-[#0B0D12]",
-  metaColor: "text-slate-500",
-  timeColor: "text-[#0B0D12]",
-  timeLabelColor: "text-slate-400",
-  durationColor: "text-[#0B0D12]",
-  subColor: "text-slate-500",
+  metaColor: "text-[#047857]",
+  timeColor: "text-[#064E3B]",
+  timeLabelColor: "text-[#065F46]",
+  durationColor: "text-[#064E3B]",
+  subColor: "text-[#047857]",
 };
 
 const READ: Tone = {
@@ -108,18 +108,18 @@ const READ: Tone = {
 };
 
 const SAVED: Tone = {
-  card: "bg-[#F0FDF4]",
-  strip: "bg-[#10B981]",
-  badgeBg: "bg-[#10B981]",
+  card: "bg-[#FFFBFB]",
+  strip: "bg-[#DC2626]",
+  badgeBg: "bg-[#DC2626]",
   badgeText: "text-white",
   badgeDot: "bg-white",
   label: "SAVED",
   nameColor: "text-[#0B0D12]",
-  metaColor: "text-[#047857]",
-  timeColor: "text-[#064E3B]",
-  timeLabelColor: "text-[#065F46]",
-  durationColor: "text-[#064E3B]",
-  subColor: "text-[#047857]",
+  metaColor: "text-slate-500",
+  timeColor: "text-[#0B0D12]",
+  timeLabelColor: "text-slate-400",
+  durationColor: "text-[#0B0D12]",
+  subColor: "text-slate-500",
 };
 
 export default function VoicemailCard({
@@ -140,9 +140,9 @@ export default function VoicemailCard({
     .slice(0, 2)
     .toUpperCase();
   const avColor = v.savedByUser
-    ? "#10B981"
+    ? "#DC2626"
     : !v.isRead
-      ? "#DC2626"
+      ? "#10B981"
       : avatarColor(callerDisplay);
 
   return (
@@ -221,7 +221,7 @@ export default function VoicemailCard({
           disabled={saving}
           className={`flex h-9 w-9 items-center justify-center rounded-full transition disabled:opacity-50 ${
             v.savedByUser
-              ? "bg-[#10B981] text-white hover:brightness-110"
+              ? "bg-[#DC2626] text-white hover:brightness-110"
               : "bg-slate-100 text-slate-600 hover:bg-slate-200"
           }`}
         >

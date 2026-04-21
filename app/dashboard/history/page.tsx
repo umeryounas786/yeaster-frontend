@@ -52,17 +52,17 @@ function statusBadge(v: Voicemail) {
   }
   if (v.savedByUser) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-800">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+      <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-800">
+        <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
         Saved
       </span>
     );
   }
   if (!v.isRead) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-800">
-        <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
-        Unread
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-800">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+        New
       </span>
     );
   }

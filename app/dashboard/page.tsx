@@ -334,7 +334,7 @@ export default function DashboardPage() {
               {(
                 [
                   { key: "all", label: "All" },
-                  { key: "unread", label: "Unread" },
+                  { key: "unread", label: "New" },
                   { key: "read", label: "Read" },
                   { key: "saved", label: "Saved" },
                 ] as { key: WallboardFilter; label: string }[]
@@ -472,23 +472,23 @@ function StatTotal({ value, loading }: { value: number; loading: boolean }) {
 
 function StatUnread({ value, loading }: { value: number; loading: boolean }) {
   return (
-    <div className="rounded-2xl bg-[#FEF2F2] p-5">
+    <div className="rounded-2xl bg-[#F0FDF4] p-5">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#B91C1C]">
-          Unread
+        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#047857]">
+          New
         </p>
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#DC2626]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#10B981]">
           <Inbox className="h-4 w-4 text-white" />
         </div>
       </div>
       {loading ? (
         <Skeleton className="mt-3.5 h-11 w-14" />
       ) : (
-        <p className="mt-3.5 font-mono-data text-[44px] font-bold leading-none text-[#991B1B]">
+        <p className="mt-3.5 font-mono-data text-[44px] font-bold leading-none text-[#064E3B]">
           {String(value).padStart(2, "0")}
         </p>
       )}
-      <p className="mt-3 text-xs font-semibold text-[#B91C1C]">
+      <p className="mt-3 text-xs font-semibold text-[#047857]">
         {value > 0 ? "Needs attention" : "All handled"}
       </p>
     </div>
@@ -520,23 +520,25 @@ function StatRead({ value, loading }: { value: number; loading: boolean }) {
 
 function StatSaved({ value, loading }: { value: number; loading: boolean }) {
   return (
-    <div className="rounded-2xl bg-[#0B0D12] p-5">
+    <div className="rounded-2xl bg-[#FEF2F2] p-5">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-400">
+        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#B91C1C]">
           Saved
         </p>
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#10B981]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#DC2626]">
           <BookmarkCheck className="h-4 w-4 text-white" />
         </div>
       </div>
       {loading ? (
         <Skeleton className="mt-3.5 h-11 w-14" />
       ) : (
-        <p className="mt-3.5 font-mono-data text-[44px] font-bold leading-none text-white">
+        <p className="mt-3.5 font-mono-data text-[44px] font-bold leading-none text-[#991B1B]">
           {String(value).padStart(2, "0")}
         </p>
       )}
-      <p className="mt-3 text-xs text-slate-400">Marked for follow-up</p>
+      <p className="mt-3 text-xs font-semibold text-[#B91C1C]">
+        Marked for follow-up
+      </p>
     </div>
   );
 }
