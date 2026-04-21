@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, LogOut } from "lucide-react";
+import { Clock, LayoutGrid, LogOut } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import type { UserProfile } from "@/lib/types";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Wallboard", icon: LayoutGrid, exact: true },
+  { href: "/dashboard/history", label: "History", icon: Clock },
 ];
 
 export default function UserSidebar() {
