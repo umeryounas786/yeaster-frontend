@@ -270,14 +270,14 @@ export default function DashboardPage() {
         }
         actions={
           <>
-            <div className="relative hidden md:block">
+            <div className="relative w-full sm:w-auto">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search caller, number, extension…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-10 w-[280px] rounded-xl bg-white pl-10 pr-3 text-xs font-medium text-slate-900 placeholder-slate-400 ring-1 ring-inset ring-transparent transition focus:ring-slate-200"
+                className="h-10 w-full rounded-xl bg-white pl-10 pr-3 text-xs font-medium text-slate-900 placeholder-slate-400 ring-1 ring-inset ring-transparent transition focus:ring-slate-200 sm:w-[280px]"
               />
             </div>
             <button
@@ -287,7 +287,7 @@ export default function DashboardPage() {
                 loadPage({ silent: true });
               }}
               disabled={syncing}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#0B0D12] px-4 text-xs font-bold text-white transition hover:bg-[#1F2937] disabled:opacity-60"
+              className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl bg-[#0B0D12] px-4 text-xs font-bold text-white transition hover:bg-[#1F2937] disabled:opacity-60"
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`}

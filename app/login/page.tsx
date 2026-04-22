@@ -46,14 +46,12 @@ export default function LoginPage() {
       {/* Brand Panel (Left) */}
       <div className="hidden w-[44%] flex-col justify-between bg-[#0B0D12] p-14 lg:flex">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0062FF] shadow-lg shadow-[#0062FF]/30">
-            <div className="h-3.5 w-3.5 rounded-full bg-white" />
-          </div>
-          <div>
-            <p className="font-heading text-lg font-bold text-white">Yeastar</p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Wallboard
-            </p>
+          <div className="rounded-lg bg-white px-2 py-1.5 shadow-lg">
+            <img
+              src="/logo.jpeg"
+              alt="CompuVoIP"
+              className="h-9 w-auto object-contain"
+            />
           </div>
         </div>
 
@@ -83,13 +81,12 @@ export default function LoginPage() {
       <div className="flex flex-1 items-center justify-center p-6 lg:p-14">
         <div className="w-full max-w-md space-y-8">
           {/* Mobile brand */}
-          <div className="flex items-center gap-3 lg:hidden">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0062FF]">
-              <div className="h-3.5 w-3.5 rounded-full bg-white" />
-            </div>
-            <p className="font-heading text-lg font-bold text-[#0B0D12]">
-              Yeastar Wallboard
-            </p>
+          <div className="flex justify-center lg:hidden">
+            <img
+              src="/logo.jpeg"
+              alt="CompuVoIP"
+              className="h-auto w-64 max-w-full object-contain"
+            />
           </div>
 
           <div>
