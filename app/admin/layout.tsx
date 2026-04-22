@@ -8,10 +8,12 @@ export default function AdminLayout({
 }) {
   return (
     <ProtectedRoute allow="super_admin">
-      <div className="flex min-h-screen" style={{ backgroundColor: "#F5F6F8" }}>
+      <div className="min-h-screen" style={{ backgroundColor: "#F5F6F8" }}>
         <Sidebar />
-        <main className="flex-1 px-8 py-8 md:px-10">
-          <div className="mx-auto max-w-7xl">{children}</div>
+        <main className="lg:pl-[248px]">
+          <div className="mx-auto max-w-7xl px-4 py-5 md:px-8 md:py-8 lg:px-10">
+            {children}
+          </div>
         </main>
       </div>
     </ProtectedRoute>
