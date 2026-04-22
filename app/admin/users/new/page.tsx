@@ -10,7 +10,7 @@ export default function NewUserPage() {
     <div>
       <PageHeader
         title="Create User"
-        description="Add a new user and their Yeastar PBX connection details."
+        description="Add a new user and their CompuVOIP PBX connection details."
         breadcrumbs={[
           { href: "/admin", label: "Dashboard" },
           { href: "/admin/users", label: "Users" },

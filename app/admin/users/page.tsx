@@ -145,7 +145,7 @@ export default function AdminUsersPage() {
     <div>
       <PageHeader
         title="Users"
-        description="Manage tenants connecting to their Yeastar PBX."
+        description="Manage tenants connecting to their CompuVOIP PBX."
         breadcrumbs={[{ label: "Admin" }, { label: "Users" }]}
         actions={
           <>

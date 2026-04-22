@@ -7,6 +7,7 @@ import type {
   PaginatedResult,
   Profile,
   Role,
+  SummaryResponse,
   SyncResponse,
   UpdateUserPayload,
   UserProfile,
@@ -184,6 +185,11 @@ export const voicemailApi = {
 
   extensions: () =>
     request<{ items: ExtensionRef[] }>("/voicemails/extensions"),
+
+  summary: (params: { search?: string } = {}) =>
+    request<SummaryResponse>("/voicemails/summary", {
+      query: { search: params.search },
+    }),
 
   history: (
     params: {

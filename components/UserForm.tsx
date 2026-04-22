@@ -199,7 +199,7 @@ export default function UserForm({
           </div>
           <div>
             <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-              Yeastar PBX Connection
+              CompuVOIP PBX Connection
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               API credentials this user will connect to. The Client Secret is
