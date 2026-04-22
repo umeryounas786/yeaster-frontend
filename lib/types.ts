@@ -109,6 +109,24 @@ export interface ExtensionRef {
   name: string;
 }
 
+export interface ExtensionSummary {
+  extensionNumber: string;
+  extensionName: string;
+  isGroup: boolean;
+  newCount: number;
+  readCount: number;
+  savedCount: number;
+  total: number;
+}
+
+export interface SummaryResponse {
+  items: ExtensionSummary[];
+  stats: WallboardStats;
+  lastSyncedAt: number | null;
+  syncing: boolean;
+  fetchedAt: string;
+}
+
 export interface HistoryResponse {
   items: Voicemail[];
   page: number;

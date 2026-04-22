@@ -1,60 +1,52 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BookmarkCheck,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
+  Eye,
+  EyeOff,
   Inbox,
   RefreshCw,
   Search,
+  Users as UsersIcon,
   Voicemail as VoicemailIcon,
 } from "lucide-react";
 import { ApiError, voicemailApi } from "@/lib/api";
 import type {
-  ExtensionRef,
+  ExtensionSummary,
   UserProfile,
-  Voicemail,
-  WallboardFilter,
   WallboardStats,
 } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
-import { useToast } from "@/components/ui/Toast";
 import { Skeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
-import VoicemailCard from "@/components/VoicemailCard";
 import PageHeader from "@/components/admin/PageHeader";
 
 const REFRESH_INTERVAL_MS = 30_000;
-const PAGE_SIZE = 30;
+const SHOW_NAMES_KEY = "wallboard_show_names";
+
+type FilterKey = "all" | "new" | "read" | "saved";
 
 export default function DashboardPage() {
   const { profile } = useAuth();
   const user = profile as UserProfile | null;
-  const toast = useToast();
 
-  const [items, setItems] = useState<Voicemail[]>([]);
+  const [items, setItems] = useState<ExtensionSummary[]>([]);
   const [stats, setStats] = useState<WallboardStats>({
     total: 0,
     unread: 0,
     read: 0,
     saved: 0,
   });
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [syncing, setSyncing] = useState(false);
-
-  const [readLoading, setReadLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState<WallboardFilter>("all");
+  const [showNames, setShowNames] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
   const [extensionFilter, setExtensionFilter] = useState<string>("");
-  const [availableExtensions, setAvailableExtensions] = useState<ExtensionRef[]>([]);
-  const [savingId, setSavingId] = useState<string | null>(null);
 
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -64,173 +56,74 @@ export default function DashboardPage() {
     };
   }, []);
 
-  // Pure DB read. Never touches the PBX — guaranteed fast, guaranteed reliable.
-  const loadPage = useCallback(
-    async (opts: { silent?: boolean; pageOverride?: number } = {}) => {
-      const { silent = false, pageOverride } = opts;
-      if (!silent) setReadLoading(true);
+  // Persist the show-names preference in localStorage per tenant.
+  useEffect(() => {
+    const saved = localStorage.getItem(SHOW_NAMES_KEY);
+    if (saved !== null) setShowNames(saved === "true");
+  }, []);
+  useEffect(() => {
+    localStorage.setItem(SHOW_NAMES_KEY, String(showNames));
+  }, [showNames]);
+
+  const load = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}) => {
+      void silent;
       try {
-        const data = await voicemailApi.wallboard({
-          search: search || undefined,
-          filter: activeFilter,
-          extensionNumber: extensionFilter || undefined,
-          page: pageOverride ?? page,
-          limit: PAGE_SIZE,
-        });
+        // Pull the full summary — we filter client-side so search is instant
+        // and matches extension numbers exactly.
+        const data = await voicemailApi.summary();
         if (!mountedRef.current) return;
         setItems(data.items);
         setStats(data.stats);
-        setTotal(data.total);
-        setTotalPages(data.totalPages);
         setLastSyncedAt(data.lastSyncedAt);
         setSyncing(data.syncing);
-        if (pageOverride && pageOverride !== page) setPage(pageOverride);
         setError(null);
       } catch (e) {
         if (!mountedRef.current) return;
         setError(
-          e instanceof ApiError ? e.message : "Failed to load voicemails"
+          e instanceof ApiError ? e.message : "Failed to load summary"
         );
       } finally {
-        if (mountedRef.current) {
-          if (!silent) setReadLoading(false);
-          setInitialLoad(false);
-        }
+        if (mountedRef.current) setInitialLoad(false);
       }
     },
-    [search, activeFilter, extensionFilter, page]
+    []
   );
 
-  // Fire a background sync — don't block anything. Always safe to call.
-  const triggerSync = useCallback(
-    async (opts: { showToast?: boolean } = {}) => {
-      const { showToast = false } = opts;
-      try {
-        const res = await voicemailApi.sync();
-        if (res.triggered && showToast) {
-          toast.info("Refreshing from PBX", "This may take a few seconds");
-        }
-      } catch (e) {
-        // Sync is background — never block the UI. Silent.
-        if (showToast) {
-          toast.error(
-            "Could not refresh from PBX",
-            e instanceof ApiError ? e.message : "Will retry automatically"
-          );
-        }
-      }
-    },
-    [toast]
-  );
+  const triggerSync = useCallback(async () => {
+    try {
+      await voicemailApi.sync();
+      setSyncing(true);
+    } catch {
+      // Silent — server logs it.
+    }
+  }, []);
 
-  // Initial mount — kick off background sync + load page 1.
+  // Initial load
   useEffect(() => {
     triggerSync();
-    loadPage();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Load list of extensions that have voicemails (for filter dropdown).
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await voicemailApi.extensions();
-        if (!cancelled) setAvailableExtensions(res.items);
-      } catch {
-        // Non-fatal — dropdown just won't populate.
-      }
-    };
     load();
-    const id = setInterval(load, 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // While a sync is running (or DB is still empty on first load), poll
-  // wallboard every 2 seconds so data appears as soon as it arrives.
-  useEffect(() => {
-    if (!syncing && total > 0) return;
-    if (initialLoad) return;
-    const id = setInterval(() => loadPage({ silent: true }), 2000);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncing, total, initialLoad]);
-
-  // Debounced reload on search / filter change — reset to page 1.
-  useEffect(() => {
-    if (initialLoad) return;
-    const handle = setTimeout(() => {
-      setPage(1);
-      loadPage({ pageOverride: 1 });
-    }, 200);
-    return () => clearTimeout(handle);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, activeFilter, extensionFilter]);
-
-  // Page change — only reload items, never sync.
-  const goToPage = useCallback(
-    (next: number) => {
-      if (next === page || next < 1 || next > totalPages) return;
-      setPage(next);
-      loadPage({ pageOverride: next });
-    },
-    [page, totalPages, loadPage]
-  );
-
-  // Auto-refresh — fire background sync + silent page reload.
+  // Auto refresh every 30s
   useEffect(() => {
     const id = setInterval(() => {
       triggerSync();
-      loadPage({ silent: true });
+      load({ silent: true });
     }, REFRESH_INTERVAL_MS);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, activeFilter, page]);
+  }, []);
 
-  const onToggleSave = useCallback(
-    async (vm: Voicemail) => {
-      setSavingId(vm._id);
-      try {
-        const updated = vm.savedByUser
-          ? await voicemailApi.unmarkSaved(vm._id)
-          : await voicemailApi.markSaved(vm._id);
-        setItems((prev) =>
-          prev.map((p) => (p._id === updated._id ? updated : p))
-        );
-        setStats((prev) => {
-          if (updated.savedByUser) {
-            return {
-              ...prev,
-              saved: prev.saved + 1,
-              unread: vm.isRead ? prev.unread : Math.max(0, prev.unread - 1),
-              read: vm.isRead ? Math.max(0, prev.read - 1) : prev.read,
-            };
-          } else {
-            return {
-              ...prev,
-              saved: Math.max(0, prev.saved - 1),
-              unread: vm.isRead ? prev.unread : prev.unread + 1,
-              read: vm.isRead ? prev.read + 1 : prev.read,
-            };
-          }
-        });
-        toast.success(
-          updated.savedByUser ? "Voicemail saved" : "Voicemail unsaved"
-        );
-      } catch (e) {
-        toast.error(
-          "Update failed",
-          e instanceof ApiError ? e.message : "Please try again"
-        );
-      } finally {
-        setSavingId(null);
-      }
-    },
-    [toast]
-  );
+  // Poll while syncing or DB is empty on first load
+  useEffect(() => {
+    if (initialLoad) return;
+    if (!syncing && items.length > 0) return;
+    const id = setInterval(() => load({ silent: true }), 2000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncing, items.length, initialLoad]);
 
   const displayName = user?.fullName || user?.username || "user";
   const updatedAt = lastSyncedAt
@@ -241,10 +134,27 @@ export default function DashboardPage() {
       })
     : null;
 
-  const rangeStart = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const rangeEnd = Math.min(page * PAGE_SIZE, total);
-
-  const showingList = useMemo(() => items, [items]);
+  const filteredItems = items.filter((ext) => {
+    // Search — accept "250", "Ext 250", "ext250", or the extension name
+    if (search) {
+      const raw = search.trim().toLowerCase();
+      // Strip leading "ext" / "ext." / "ext " so "Ext 250" matches "250"
+      const q = raw.replace(/^ext\.?\s*/i, "").trim();
+      const number = ext.extensionNumber.toLowerCase();
+      const name = (ext.extensionName || "").toLowerCase();
+      const matches =
+        (q && (number.includes(q) || name.includes(q))) ||
+        name.includes(raw);
+      if (!matches) return false;
+    }
+    // Dropdown
+    if (extensionFilter && ext.extensionNumber !== extensionFilter) return false;
+    // Status filter
+    if (activeFilter === "new") return ext.newCount > 0;
+    if (activeFilter === "read") return ext.readCount > 0;
+    if (activeFilter === "saved") return ext.savedCount > 0;
+    return true;
+  });
 
   return (
     <div>
@@ -252,7 +162,7 @@ export default function DashboardPage() {
         title="Voicemail Wallboard"
         description={
           updatedAt
-            ? `${displayName}'s voicemails  ·  Last synced ${updatedAt}${syncing ? "  ·  syncing…" : ""}`
+            ? `${displayName}'s voicemails · Last synced ${updatedAt}${syncing ? " · syncing…" : ""}`
             : syncing
               ? "Syncing with PBX…"
               : "Ready"
@@ -274,17 +184,17 @@ export default function DashboardPage() {
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search caller, number, extension…"
+                placeholder="Search by extension or name…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-10 w-full rounded-xl bg-white pl-10 pr-3 text-xs font-medium text-slate-900 placeholder-slate-400 ring-1 ring-inset ring-transparent transition focus:ring-slate-200 sm:w-[280px]"
+                className="h-10 w-full rounded-xl bg-white pl-10 pr-3 text-xs font-medium text-slate-900 placeholder-slate-400 ring-1 ring-inset ring-transparent transition focus:ring-slate-200 sm:w-[260px]"
               />
             </div>
             <button
               type="button"
               onClick={() => {
-                triggerSync({ showToast: true });
-                loadPage({ silent: true });
+                triggerSync();
+                load();
               }}
               disabled={syncing}
               className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl bg-[#0B0D12] px-4 text-xs font-bold text-white transition hover:bg-[#1F2937] disabled:opacity-60"
@@ -298,21 +208,63 @@ export default function DashboardPage() {
         }
       />
 
+      {/* Top stats */}
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatTotal value={stats.total} loading={initialLoad} />
-        <StatUnread value={stats.unread} loading={initialLoad} />
-        <StatRead value={stats.read} loading={initialLoad} />
-        <StatSaved value={stats.saved} loading={initialLoad} />
+        <StatTile
+          label="Total Messages"
+          value={stats.total}
+          loading={initialLoad}
+          icon={<VoicemailIcon className="h-4 w-4 text-[#0062FF]" />}
+          iconBg="bg-[#EEF2FF]"
+          cardBg="bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]"
+          valueCls="text-[#0B0D12]"
+          captionCls="text-slate-500"
+          caption="All voicemails today"
+        />
+        <StatTile
+          label="New Messages"
+          value={stats.unread}
+          loading={initialLoad}
+          icon={<Inbox className="h-4 w-4 text-white" />}
+          iconBg="bg-[#10B981]"
+          cardBg="bg-[#F0FDF4]"
+          valueCls="text-[#064E3B]"
+          captionCls="text-[#047857] font-semibold"
+          caption={stats.unread > 0 ? "Needs attention" : "All handled"}
+        />
+        <StatTile
+          label="Read Messages"
+          value={stats.read}
+          loading={initialLoad}
+          icon={<CheckCircle2 className="h-4 w-4 text-[#D97706]" />}
+          iconBg="bg-[#FEF3C7]"
+          cardBg="bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]"
+          valueCls="text-[#0B0D12]"
+          captionCls="text-slate-500"
+          caption="Handled today"
+        />
+        <StatTile
+          label="Saved Messages"
+          value={stats.saved}
+          loading={initialLoad}
+          icon={<BookmarkCheck className="h-4 w-4 text-white" />}
+          iconBg="bg-[#DC2626]"
+          cardBg="bg-[#FEF2F2]"
+          valueCls="text-[#991B1B]"
+          captionCls="text-[#B91C1C] font-semibold"
+          caption="Marked for follow-up"
+        />
       </div>
 
+      {/* Per-user summary panel */}
       <div className="rounded-2xl bg-white p-5 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <h2 className="font-heading text-base font-bold text-[#0B0D12]">
-              All voicemails
+              Voicemails by User
             </h2>
             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-mono-data text-[11px] font-bold text-slate-600">
-              {total}
+              {items.length} {items.length === 1 ? "user" : "users"}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -323,27 +275,40 @@ export default function DashboardPage() {
               aria-label="Filter by extension"
             >
               <option value="">All extensions</option>
-              {availableExtensions.map((ext) => (
-                <option key={ext.number} value={ext.number}>
-                  Ext {ext.number}
-                  {ext.name ? ` — ${ext.name}` : ""}
+              {items.map((ext) => (
+                <option key={ext.extensionNumber} value={ext.extensionNumber}>
+                  Ext {ext.extensionNumber}
+                  {showNames && ext.extensionName ? ` — ${ext.extensionName}` : ""}
                 </option>
               ))}
             </select>
-            <div className="flex items-center gap-1.5 rounded-xl bg-slate-50 p-1">
+            <button
+              type="button"
+              onClick={() => setShowNames((v) => !v)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-slate-50 px-3 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-transparent transition hover:bg-slate-100"
+              title={showNames ? "Hide names" : "Show names"}
+            >
+              {showNames ? (
+                <EyeOff className="h-3.5 w-3.5" />
+              ) : (
+                <Eye className="h-3.5 w-3.5" />
+              )}
+              {showNames ? "Names on" : "Names off"}
+            </button>
+            <div className="flex items-center gap-1 rounded-xl bg-slate-50 p-1">
               {(
                 [
                   { key: "all", label: "All" },
-                  { key: "unread", label: "New" },
+                  { key: "new", label: "New" },
                   { key: "read", label: "Read" },
                   { key: "saved", label: "Saved" },
-                ] as { key: WallboardFilter; label: string }[]
+                ] as { key: FilterKey; label: string }[]
               ).map((f) => (
                 <button
                   key={f.key}
                   type="button"
                   onClick={() => setActiveFilter(f.key)}
-                  className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                     activeFilter === f.key
                       ? "bg-[#0B0D12] text-white shadow-sm"
                       : "text-slate-500 hover:text-slate-900"
@@ -362,27 +327,24 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {initialLoad || (syncing && showingList.length === 0) ? (
-          <div>
-            {syncing && showingList.length === 0 && !initialLoad && (
-              <div className="mb-3 flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-3 text-sm text-indigo-800 ring-1 ring-inset ring-indigo-200">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                <span className="font-semibold">Syncing voicemails from PBX…</span>
-                <span className="text-indigo-600">
-                  This can take 10–30 seconds on first load.
-                </span>
-              </div>
-            )}
-            <VoicemailSkeletonList />
+        {initialLoad ? (
+          <RowsSkeleton />
+        ) : syncing && items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50">
+              <RefreshCw className="h-5 w-5 animate-spin text-indigo-600" />
+            </div>
+            <h3 className="text-sm font-semibold text-slate-900">
+              Syncing voicemails from PBX…
+            </h3>
+            <p className="mt-1 max-w-sm text-sm text-slate-500">
+              This can take 10–30 seconds on first load.
+            </p>
           </div>
-        ) : showingList.length === 0 ? (
+        ) : filteredItems.length === 0 ? (
           <EmptyState
             icon={VoicemailIcon}
-            title={
-              activeFilter !== "all"
-                ? `No ${activeFilter} voicemails`
-                : "No voicemails to display"
-            }
+            title="No voicemails to display"
             description={
               search
                 ? "Try adjusting your search."
@@ -390,176 +352,209 @@ export default function DashboardPage() {
             }
           />
         ) : (
-          <div
-            className={`space-y-2.5 transition-opacity ${readLoading ? "opacity-60" : ""}`}
-          >
-            {showingList.map((v) => (
-              <VoicemailCard
-                key={v._id}
-                voicemail={v}
-                onToggleSave={onToggleSave}
-                saving={savingId === v._id}
-              />
+          <div className="divide-y divide-slate-100">
+            {filteredItems.map((ext) => (
+              <ExtensionRow key={ext.extensionNumber} ext={ext} showName={showNames} />
             ))}
           </div>
         )}
-
-        {totalPages > 1 && !initialLoad && (
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-            <p className="text-xs text-slate-500">
-              Showing{" "}
-              <span className="font-mono-data font-semibold text-[#0B0D12]">
-                {rangeStart}-{rangeEnd}
-              </span>{" "}
-              of{" "}
-              <span className="font-mono-data font-semibold text-[#0B0D12]">
-                {total}
-              </span>{" "}
-              voicemails
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={page <= 1 || readLoading}
-                onClick={() => goToPage(page - 1)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-                Prev
-              </button>
-              <span className="font-mono-data text-xs font-semibold text-slate-600">
-                Page {page} / {totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={page >= totalPages || readLoading}
-                onClick={() => goToPage(page + 1)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Next
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-function StatTotal({ value, loading }: { value: number; loading: boolean }) {
+// ─── Row per extension ─────────────────────────────────────────────
+
+function ExtensionRow({
+  ext,
+  showName,
+}: {
+  ext: ExtensionSummary;
+  showName: boolean;
+}) {
+  const label = showName && ext.extensionName
+    ? `${ext.extensionName} (Ext ${ext.extensionNumber})`
+    : `Ext ${ext.extensionNumber}`;
+
+  const parts: string[] = [];
+  parts.push(`${ext.newCount} New`);
+  parts.push(`${ext.readCount} Read`);
+  if (ext.savedCount > 0 || parts.length > 0) parts.push(`${ext.savedCount} Saved`);
+
+  const initials = showName && ext.extensionName
+    ? ext.extensionName
+        .split(/\s+/)
+        .map((w) => w[0] || "")
+        .slice(0, 2)
+        .join("")
+        .toUpperCase() || ext.extensionNumber.slice(-2)
+    : ext.extensionNumber.slice(-2);
+
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
+    <div className="flex items-center gap-4 px-2 py-4 transition hover:bg-slate-50/60">
+      <div
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${
+          ext.newCount > 0
+            ? "bg-[#10B981]"
+            : ext.savedCount > 0
+              ? "bg-[#DC2626]"
+              : "bg-slate-500"
+        }`}
+      >
+        {initials}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[15px] font-semibold text-[#0B0D12]">
+          {label}
+          {ext.isGroup && (
+            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 align-middle text-[9px] font-bold text-indigo-800 ring-1 ring-inset ring-indigo-300">
+              <UsersIcon className="h-2.5 w-2.5" />
+              GROUP
+            </span>
+          )}
+        </p>
+        <p className="mt-1 truncate text-xs font-medium text-slate-600">
+          <span
+            className={
+              ext.newCount > 0 ? "text-emerald-700" : "text-slate-400"
+            }
+          >
+            {ext.newCount} New
+          </span>
+          <span className="mx-1.5 text-slate-300">·</span>
+          <span
+            className={ext.readCount > 0 ? "text-amber-700" : "text-slate-400"}
+          >
+            {ext.readCount} Read
+          </span>
+          <span className="mx-1.5 text-slate-300">·</span>
+          <span
+            className={
+              ext.savedCount > 0 ? "text-rose-700" : "text-slate-400"
+            }
+          >
+            {ext.savedCount} Saved
+          </span>
+        </p>
+      </div>
+
+      <div className="hidden shrink-0 items-center gap-2 sm:flex">
+        <CountPill
+          value={ext.newCount}
+          tone="emerald"
+          active={ext.newCount > 0}
+        />
+        <CountPill
+          value={ext.readCount}
+          tone="amber"
+          active={ext.readCount > 0}
+        />
+        <CountPill
+          value={ext.savedCount}
+          tone="rose"
+          active={ext.savedCount > 0}
+        />
+        <div className="ml-1 hidden w-14 text-right md:block">
+          <p className="font-mono-data text-[16px] font-bold text-[#0B0D12]">
+            {ext.total}
+          </p>
+          <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+            Total
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CountPill({
+  value,
+  tone,
+  active,
+}: {
+  value: number;
+  tone: "emerald" | "amber" | "rose";
+  active: boolean;
+}) {
+  const cls = !active
+    ? "bg-slate-50 text-slate-400 ring-slate-200"
+    : tone === "emerald"
+      ? "bg-emerald-100 text-emerald-900 ring-emerald-300"
+      : tone === "amber"
+        ? "bg-amber-100 text-amber-900 ring-amber-300"
+        : "bg-rose-100 text-rose-900 ring-rose-300";
+  return (
+    <span
+      className={`inline-flex min-w-[2.25rem] items-center justify-center rounded-lg px-2 py-1 font-mono-data text-[13px] font-bold ring-1 ring-inset ${cls}`}
+    >
+      {value}
+    </span>
+  );
+}
+
+// ─── Top stat tile (reusable) ──────────────────────────────────────
+
+function StatTile({
+  label,
+  value,
+  loading,
+  icon,
+  iconBg,
+  cardBg,
+  valueCls,
+  captionCls,
+  caption,
+}: {
+  label: string;
+  value: number;
+  loading: boolean;
+  icon: React.ReactNode;
+  iconBg: string;
+  cardBg: string;
+  valueCls: string;
+  captionCls: string;
+  caption: string;
+}) {
+  return (
+    <div className={`rounded-2xl p-5 ${cardBg}`}>
       <div className="flex items-center justify-between">
         <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">
-          Total
+          {label}
         </p>
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF2FF]">
-          <VoicemailIcon className="h-4 w-4 text-[#0062FF]" />
-        </div>
-      </div>
-      {loading ? (
-        <Skeleton className="mt-3.5 h-11 w-14" />
-      ) : (
-        <p className="mt-3.5 font-mono-data text-[44px] font-bold leading-none text-[#0B0D12]">
-          {String(value).padStart(2, "0")}
-        </p>
-      )}
-      <p className="mt-3 text-xs text-slate-500">All voicemails today</p>
-    </div>
-  );
-}
-
-function StatUnread({ value, loading }: { value: number; loading: boolean }) {
-  return (
-    <div className="rounded-2xl bg-[#F0FDF4] p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#047857]">
-          New
-        </p>
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#10B981]">
-          <Inbox className="h-4 w-4 text-white" />
-        </div>
-      </div>
-      {loading ? (
-        <Skeleton className="mt-3.5 h-11 w-14" />
-      ) : (
-        <p className="mt-3.5 font-mono-data text-[44px] font-bold leading-none text-[#064E3B]">
-          {String(value).padStart(2, "0")}
-        </p>
-      )}
-      <p className="mt-3 text-xs font-semibold text-[#047857]">
-        {value > 0 ? "Needs attention" : "All handled"}
-      </p>
-    </div>
-  );
-}
-
-function StatRead({ value, loading }: { value: number; loading: boolean }) {
-  return (
-    <div className="rounded-2xl bg-white p-5 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
-      <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">
-          Read
-        </p>
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FEF3C7]">
-          <CheckCircle2 className="h-4 w-4 text-[#D97706]" />
-        </div>
-      </div>
-      {loading ? (
-        <Skeleton className="mt-3.5 h-11 w-14" />
-      ) : (
-        <p className="mt-3.5 font-mono-data text-[44px] font-bold leading-none text-[#0B0D12]">
-          {String(value).padStart(2, "0")}
-        </p>
-      )}
-      <p className="mt-3 text-xs text-slate-500">Handled today</p>
-    </div>
-  );
-}
-
-function StatSaved({ value, loading }: { value: number; loading: boolean }) {
-  return (
-    <div className="rounded-2xl bg-[#FEF2F2] p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#B91C1C]">
-          Saved
-        </p>
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#DC2626]">
-          <BookmarkCheck className="h-4 w-4 text-white" />
-        </div>
-      </div>
-      {loading ? (
-        <Skeleton className="mt-3.5 h-11 w-14" />
-      ) : (
-        <p className="mt-3.5 font-mono-data text-[44px] font-bold leading-none text-[#991B1B]">
-          {String(value).padStart(2, "0")}
-        </p>
-      )}
-      <p className="mt-3 text-xs font-semibold text-[#B91C1C]">
-        Marked for follow-up
-      </p>
-    </div>
-  );
-}
-
-function VoicemailSkeletonList() {
-  return (
-    <div className="space-y-2.5">
-      {Array.from({ length: 6 }).map((_, i) => (
         <div
-          key={i}
-          className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4"
+          className={`flex h-8 w-8 items-center justify-center rounded-lg ${iconBg}`}
         >
-          <div className="h-[60px] w-1 rounded-full bg-slate-200" />
-          <Skeleton className="h-11 w-11 rounded-full" />
+          {icon}
+        </div>
+      </div>
+      {loading ? (
+        <Skeleton className="mt-3.5 h-11 w-14" />
+      ) : (
+        <p
+          className={`mt-3.5 font-mono-data text-[44px] font-bold leading-none ${valueCls}`}
+        >
+          {String(value).padStart(2, "0")}
+        </p>
+      )}
+      <p className={`mt-3 text-xs ${captionCls}`}>{caption}</p>
+    </div>
+  );
+}
+
+function RowsSkeleton() {
+  return (
+    <div className="divide-y divide-slate-100">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-4 px-2 py-4">
+          <Skeleton className="h-10 w-10 rounded-full" />
           <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-44" />
+            <Skeleton className="h-4 w-40" />
             <Skeleton className="h-3 w-56" />
           </div>
-          <Skeleton className="hidden h-10 w-[110px] md:block" />
-          <Skeleton className="hidden h-10 w-[80px] md:block" />
-          <Skeleton className="h-9 w-9 rounded-full" />
+          <Skeleton className="hidden h-8 w-10 sm:block" />
+          <Skeleton className="hidden h-8 w-10 sm:block" />
+          <Skeleton className="hidden h-8 w-10 sm:block" />
         </div>
       ))}
     </div>

@@ -43,7 +43,7 @@ export default function AdminOverviewPage() {
     <div>
       <PageHeader
         title="Overview"
-        description="Snapshot of all tenants connected to their Yeastar PBX."
+        description="Snapshot of all tenants connected to their CompuVOIP PBX."
         breadcrumbs={[{ label: "Admin" }, { label: "Overview" }]}
         actions={
           <Link href="/admin/users/new">
