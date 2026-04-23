@@ -11,7 +11,7 @@ export default function DashboardLayout({
       <div className="min-h-screen" style={{ backgroundColor: "#F5F6F8" }}>
         <UserSidebar />
         <main className="lg:pl-[248px]">
-          <div className="mx-auto max-w-7xl px-4 py-5 md:px-8 md:py-8 lg:px-10">
+          <div className="px-4 py-5 md:px-8 md:py-8 lg:px-10">
             {children}
           </div>
         </main>
