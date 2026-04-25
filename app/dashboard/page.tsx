@@ -45,6 +45,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showNames, setShowNames] = useState(true);
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
   const [extensionFilter, setExtensionFilter] = useState<string>("");
 
@@ -167,6 +168,8 @@ export default function DashboardPage() {
 
   // Auto-scroll the list for the wall-mounted display (no mouse/keyboard)
   useEffect(() => {
+    if (!autoScrollEnabled) return;
+
     const el = scrollRef.current;
     if (!el) return;
 
@@ -187,13 +190,13 @@ export default function DashboardPage() {
       } else {
         el.scrollTop += 1;
       }
-    }, 33); // ~30px/s — comfortable reading speed
+    }, 80); // ~15px/s — slower, easier to read
 
     return () => {
       clearInterval(tick);
       clearTimeout(pauseTimer);
     };
-  }, [filteredItems.length]);
+  }, [filteredItems.length, autoScrollEnabled]);
 
   return (
     <div>
@@ -229,6 +232,13 @@ export default function DashboardPage() {
                 className="h-10 w-full rounded-xl bg-white pl-10 pr-3 text-xs font-medium text-slate-900 placeholder-slate-400 ring-1 ring-inset ring-transparent transition focus:ring-slate-200 sm:w-[260px]"
               />
             </div>
+            <button
+              type="button"
+              onClick={() => setAutoScrollEnabled((enabled) => !enabled)}
+              className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-xs font-bold transition ${autoScrollEnabled ? "bg-slate-900 text-white hover:bg-slate-700" : "bg-slate-300 text-slate-700 hover:bg-slate-400"}`}
+            >
+              {autoScrollEnabled ? "Auto-scroll on" : "Auto-scroll off"}
+            </button>
             <button
               type="button"
               onClick={() => {
