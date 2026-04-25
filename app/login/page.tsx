@@ -46,13 +46,11 @@ export default function LoginPage() {
       {/* Brand Panel (Left) */}
       <div className="hidden w-[44%] flex-col justify-between bg-[#0B0D12] p-14 lg:flex">
         <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-white px-2 py-1.5 shadow-lg">
-            <img
-              src="/logo.jpeg"
-              alt="CompuVoIP"
-              className="h-9 w-auto object-contain"
-            />
-          </div>
+          <img
+            src="/logo.jpeg"
+            alt="CompuVoIP"
+            className="h-24 w-auto object-contain"
+          />
         </div>
 
         <div className="max-w-lg space-y-6">
@@ -85,7 +83,7 @@ export default function LoginPage() {
             <img
               src="/logo.jpeg"
               alt="CompuVoIP"
-              className="h-auto w-64 max-w-full object-contain"
+              className="h-auto w-72 max-w-full object-contain"
             />
           </div>
 

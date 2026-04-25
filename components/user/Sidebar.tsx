@@ -39,14 +39,12 @@ export default function UserSidebar() {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="sticky top-0 z-30 flex h-14 items-center justify-between bg-[#0B0D12] px-4 lg:hidden">
-        <div className="rounded-md bg-white px-2 py-1">
-          <img
-            src="/logo.jpeg"
-            alt="CompuVoIP"
-            className="h-7 w-auto object-contain"
-          />
-        </div>
+      <div className="sticky top-0 z-30 flex h-16 items-center justify-between bg-[#0B0D12] px-4 lg:hidden">
+        <img
+          src="/logo.jpeg"
+          alt="CompuVoIP"
+          className="h-12 w-auto object-contain"
+        />
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -73,11 +71,11 @@ export default function UserSidebar() {
         }`}
       >
         <div className="mb-7 flex items-center gap-2">
-          <div className="flex flex-1 items-center justify-center rounded-lg bg-white px-2 py-1.5">
+          <div className="flex flex-1 items-center justify-center px-1 py-2">
             <img
               src="/logo.jpeg"
               alt="CompuVoIP"
-              className="h-10 w-auto object-contain"
+              className="h-20 w-auto object-contain"
             />
           </div>
           <button
