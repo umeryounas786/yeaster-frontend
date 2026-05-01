@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Clock, LayoutGrid, LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+import { promoApi } from "@/lib/api";
 import type { UserProfile } from "@/lib/types";
 
 const NAV_ITEMS = [
@@ -18,6 +19,12 @@ export default function UserSidebar() {
   const user = profile as UserProfile | null;
 
   const [open, setOpen] = useState(false);
+  const [promoText, setPromoText] = useState<string | null>(null);
+
+  // Fetch promo text from API on mount
+  useEffect(() => {
+    promoApi.get().then((data) => setPromoText(data.text)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     setOpen(false);
@@ -41,7 +48,7 @@ export default function UserSidebar() {
       {/* Mobile top bar */}
       <div className="sticky top-0 z-30 flex h-16 items-center justify-between bg-[#0B0D12] px-4 lg:hidden">
         <img
-          src="/logo.jpeg"
+          src="/logo.png"
           alt="CompuVoIP"
           className="h-12 w-auto object-contain"
         />
@@ -66,16 +73,16 @@ export default function UserSidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-[248px] flex-col bg-[#0B0D12] px-[18px] py-6 transition-transform duration-200 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-[300px] flex-col bg-[#0B0D12] px-[18px] py-6 transition-transform duration-200 lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="mb-7 flex items-center gap-2">
-          <div className="flex flex-1 items-center justify-center px-1 py-2">
+          <div className="flex flex-1 items-center justify-center px-2 py-1">
             <img
-              src="/logo.jpeg"
+              src="/logo.png"
               alt="CompuVoIP"
-              className="h-20 w-auto object-contain"
+              className="h-28 w-auto object-contain"
             />
           </div>
           <button
@@ -126,6 +133,18 @@ export default function UserSidebar() {
             );
           })}
         </nav>
+
+        {/* Promo message — read-only, set by admin */}
+        {promoText && (
+          <div className="mt-4 border-t border-white/5 pt-4">
+            <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+              Company Info
+            </p>
+            <div className="rounded-xl bg-white/5 p-3 text-xs leading-relaxed text-slate-300">
+              {promoText}
+            </div>
+          </div>
+        )}
 
         <div className="mt-4 space-y-2 border-t border-white/5 pt-4">
           <div className="flex items-center gap-3 rounded-xl px-3 py-2">

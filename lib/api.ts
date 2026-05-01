@@ -219,3 +219,9 @@ export const voicemailApi = {
   unmarkSaved: (id: string) =>
     request<Voicemail>(`/voicemails/${id}/save`, { method: "DELETE" }),
 };
+
+export const promoApi = {
+  get: () => request<{ text: string }>("/promo"),
+  update: (text: string) =>
+    request<{ text: string }>("/promo", { method: "PUT", body: { text } }),
+};

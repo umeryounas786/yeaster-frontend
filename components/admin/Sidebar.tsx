@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, LogOut, Menu, Users, X } from "lucide-react";
+import { LayoutDashboard, LogOut, Megaphone, Menu, Users, X } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/promo", label: "Promo Message", icon: Megaphone },
 ];
 
 export default function Sidebar() {
@@ -40,7 +41,7 @@ export default function Sidebar() {
       {/* Mobile top bar */}
       <div className="sticky top-0 z-30 flex h-16 items-center justify-between bg-[#0B0D12] px-4 lg:hidden">
         <img
-          src="/logo.jpeg"
+          src="/logo.png"
           alt="CompuVoIP"
           className="h-12 w-auto object-contain"
         />
@@ -71,11 +72,11 @@ export default function Sidebar() {
       >
         {/* Brand */}
         <div className="mb-7 flex items-center gap-2">
-          <div className="flex flex-1 items-center justify-center px-1 py-2">
+          <div className="flex flex-1 items-center justify-center px-2 py-1">
             <img
-              src="/logo.jpeg"
+              src="/logo.png"
               alt="CompuVoIP"
-              className="h-20 w-auto object-contain"
+              className="h-28 w-auto object-contain"
             />
           </div>
           <button

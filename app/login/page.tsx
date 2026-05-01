@@ -45,11 +45,11 @@ export default function LoginPage() {
     <div className="flex min-h-screen bg-white">
       {/* Brand Panel (Left) */}
       <div className="hidden w-[44%] flex-col justify-between bg-[#0B0D12] p-14 lg:flex">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center">
           <img
-            src="/logo.jpeg"
+            src="/logo.png"
             alt="CompuVoIP"
-            className="h-24 w-auto object-contain"
+            className="h-28 w-auto object-contain"
           />
         </div>
 
@@ -81,7 +81,7 @@ export default function LoginPage() {
           {/* Mobile brand */}
           <div className="flex justify-center lg:hidden">
             <img
-              src="/logo.jpeg"
+              src="/logo.png"
               alt="CompuVoIP"
               className="h-auto w-72 max-w-full object-contain"
             />

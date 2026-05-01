@@ -268,7 +268,7 @@ export default function DashboardPage() {
           cardBg="bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]"
           valueCls="text-[#0B0D12]"
           captionCls="text-slate-500"
-          caption="All voicemails today"
+          caption="All voicemails"
         />
         <StatTile
           label="New Messages"
@@ -285,12 +285,12 @@ export default function DashboardPage() {
           label="Read Messages"
           value={stats.read}
           loading={initialLoad}
-          icon={<CheckCircle2 className="h-4 w-4 text-[#D97706]" />}
-          iconBg="bg-[#FEF3C7]"
+          icon={<CheckCircle2 className="h-4 w-4 text-[#DC2626]" />}
+          iconBg="bg-[#FEE2E2]"
           cardBg="bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]"
           valueCls="text-[#0B0D12]"
           captionCls="text-slate-500"
-          caption="Handled today"
+          caption="Handled"
         />
         <StatTile
           label="Saved Messages"
@@ -307,16 +307,17 @@ export default function DashboardPage() {
 
       {/* Per-user summary panel */}
       <div className="rounded-2xl bg-white p-5 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <h2 className="font-heading text-base font-bold text-[#0B0D12]">
-              Voicemails by User
-            </h2>
-            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-mono-data text-[11px] font-bold text-slate-600">
-              {filteredItems.length} {filteredItems.length === 1 ? "user" : "users"}
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="mb-4 flex items-center gap-3">
+          {/* Left: title + count + controls + All filter */}
+          <div className="flex flex-1 flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2.5">
+              <h2 className="font-heading text-base font-bold text-[#0B0D12]">
+                Voicemails by User
+              </h2>
+              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-mono-data text-[11px] font-bold text-slate-600">
+                {filteredItems.length} {filteredItems.length === 1 ? "user" : "users"}
+              </span>
+            </div>
             <select
               value={extensionFilter}
               onChange={(e) => setExtensionFilter(e.target.value)}
@@ -337,35 +338,36 @@ export default function DashboardPage() {
               className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-slate-50 px-3 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-transparent transition hover:bg-slate-100"
               title={showNames ? "Hide names" : "Show names"}
             >
-              {showNames ? (
-                <EyeOff className="h-3.5 w-3.5" />
-              ) : (
-                <Eye className="h-3.5 w-3.5" />
-              )}
+              {showNames ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               {showNames ? "Names on" : "Names off"}
             </button>
-            <div className="flex items-center gap-1 rounded-xl bg-slate-50 p-1">
-              {(
-                [
-                  { key: "all", label: "All" },
-                  { key: "new", label: "New" },
-                  { key: "read", label: "Read" },
-                  { key: "saved", label: "Saved" },
-                ] as { key: FilterKey; label: string }[]
-              ).map((f) => (
-                <button
-                  key={f.key}
-                  type="button"
-                  onClick={() => setActiveFilter(f.key)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                    activeFilter === f.key
-                      ? "bg-[#0B0D12] text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
+          </div>
+
+          {/* Right: column header buttons — aligned with row pills */}
+          <div className="hidden shrink-0 items-center gap-2 sm:flex">
+            {(
+              [
+                { key: "all",   label: "All",   base: "bg-slate-200 text-slate-600 hover:bg-slate-300",       active: "bg-[#0B0D12] text-white shadow-sm" },
+                { key: "new",   label: "New",   base: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200", active: "bg-emerald-500 text-white shadow-sm" },
+                { key: "read",  label: "Read",  base: "bg-rose-100 text-rose-700 hover:bg-rose-200",          active: "bg-rose-600 text-white shadow-sm" },
+                { key: "saved", label: "Saved", base: "bg-amber-100 text-amber-700 hover:bg-amber-200",       active: "bg-amber-500 text-white shadow-sm" },
+              ] as { key: FilterKey; label: string; base: string; active: string }[]
+            ).map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setActiveFilter(f.key)}
+                className={`min-w-[2.25rem] rounded-lg px-2 py-1.5 text-center text-xs font-semibold transition ${
+                  activeFilter === f.key ? f.active : f.base
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+            <div className="ml-1 hidden w-14 text-right md:block">
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+                Total
+              </span>
             </div>
           </div>
         </div>
@@ -476,14 +478,14 @@ function ExtensionRow({
           </span>
           <span className="mx-1.5 text-slate-300">·</span>
           <span
-            className={ext.readCount > 0 ? "text-amber-700" : "text-slate-400"}
+            className={ext.readCount > 0 ? "text-rose-700" : "text-slate-400"}
           >
             {ext.readCount} Read
           </span>
           <span className="mx-1.5 text-slate-300">·</span>
           <span
             className={
-              ext.savedCount > 0 ? "text-rose-700" : "text-slate-400"
+              ext.savedCount > 0 ? "text-amber-700" : "text-slate-400"
             }
           >
             {ext.savedCount} Saved
@@ -499,12 +501,12 @@ function ExtensionRow({
         />
         <CountPill
           value={ext.readCount}
-          tone="amber"
+          tone="rose"
           active={ext.readCount > 0}
         />
         <CountPill
           value={ext.savedCount}
-          tone="rose"
+          tone="amber"
           active={ext.savedCount > 0}
         />
         <div className="ml-1 hidden w-14 text-right md:block">
